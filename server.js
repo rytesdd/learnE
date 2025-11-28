@@ -2,7 +2,12 @@
 import express from 'express';
 import cors from 'cors';
 import axios from 'axios';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { extractVideoId } from './src/services/subtitles/youtubeApiService.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3002; // 更改端口为3002以避免冲突
@@ -247,9 +252,27 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// 生产环境：提供静态文件服务（统一部署方案）
+if (process.env.NODE_ENV === 'production') {
+  // 提供构建后的静态文件
+  app.use(express.static(join(__dirname, 'dist')));
+  
+  // 所有非 API 请求返回 index.html（支持前端路由）
+  app.get('*', (req, res, next) => {
+    // 如果是 API 请求，跳过
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    res.sendFile(join(__dirname, 'dist', 'index.html'));
+  });
+}
+
 // 启动服务器
 app.listen(PORT, () => {
-  console.log(`YouTube Subtitle API Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`Frontend: http://localhost:${PORT}`);
+  }
   console.log(`API endpoint: http://localhost:${PORT}/api/subtitle`);
 });
 
