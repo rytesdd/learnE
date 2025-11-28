@@ -1,20 +1,6 @@
-// Vercel Serverless Function - 将所有 API 路由迁移到这里
-// 这个文件会被 Vercel 自动识别为 API 路由
-
-import express from 'express';
-import cors from 'cors';
+// Vercel Serverless Function - /api/subtitle
 import axios from 'axios';
 import { extractVideoId } from '../src/services/subtitles/youtubeApiService.js';
-
-const app = express();
-
-// CORS 配置 - Vercel 上不需要复杂的 CORS，因为前后端同域
-app.use(cors({
-  origin: true, // 允许所有来源（Vercel 会自动处理）
-  credentials: true
-}));
-
-app.use(express.json());
 
 // 模拟字幕数据
 const MOCK_SUBTITLES = {
@@ -45,7 +31,9 @@ async function fetchSubtitlesFromYouTube(videoId) {
     
     for (const instance of invidiousInstances) {
       try {
-        const captionsResponse = await axios.get(`${instance}/api/v1/captions/${videoId}`);
+        const captionsResponse = await axios.get(`${instance}/api/v1/captions/${videoId}`, {
+          timeout: 5000 // 5秒超时
+        });
         
         if (captionsResponse.data && captionsResponse.data.length > 0) {
           const englishCaption = captionsResponse.data.find(caption => 
@@ -54,7 +42,9 @@ async function fetchSubtitlesFromYouTube(videoId) {
           );
           
           if (englishCaption) {
-            const subtitleResponse = await axios.get(`${instance}${englishCaption.url}`);
+            const subtitleResponse = await axios.get(`${instance}${englishCaption.url}`, {
+              timeout: 5000
+            });
             
             if (subtitleResponse.data && subtitleResponse.data.subtitles) {
               return subtitleResponse.data.subtitles;
@@ -75,15 +65,22 @@ async function fetchSubtitlesFromYouTube(videoId) {
 // 获取视频标题
 async function getVideoTitle(videoId) {
   try {
-    const response = await axios.get(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+    const response = await axios.get(
+      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+      { timeout: 5000 }
+    );
     return response.data.title;
   } catch (error) {
     return 'Unknown Title';
   }
 }
 
-// API路由
-app.post('/api/subtitle', async (req, res) => {
+export default async function handler(req, res) {
+  // 只允许 POST 请求
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
     const { url } = req.body;
     
@@ -119,34 +116,5 @@ app.post('/api/subtitle', async (req, res) => {
     console.error('API Error:', error);
     res.status(500).json({ error: 'Failed to fetch subtitles' });
   }
-});
-
-// 文档上传端点
-app.post('/api/upload', async (req, res) => {
-  try {
-    const { content, fileName } = req.body;
-    
-    if (!content) {
-      return res.status(400).json({ error: 'Content is required' });
-    }
-    
-    res.json({
-      success: true,
-      message: 'Document uploaded successfully',
-      fileName: fileName || 'untitled.txt',
-      contentLength: content.length
-    });
-  } catch (error) {
-    console.error('Upload Error:', error);
-    res.status(500).json({ error: 'Failed to upload document' });
-  }
-});
-
-// 健康检查
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Vercel Serverless Function 导出
-export default app;
+}
 
