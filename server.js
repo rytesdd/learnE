@@ -9,19 +9,42 @@ const PORT = process.env.PORT || 3002; // 更改端口为3002以避免冲突
 
 // 中间件 - 配置 CORS 以支持来自 Vercel 前端的请求
 const corsOptions = {
-  origin: [
-    'https://new-english-17tq.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000',
-    /\.vercel\.app$/
-  ],
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://new-english-17tq.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:3000'
+    ];
+    // 允许所有 vercel.app 域名
+    if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'Set-Cookie'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
 app.use(cors(corsOptions));
+
+// 手动设置 Access-Control-Allow-Credentials 头以确保它被正确设置
+app.use((req, res, next) => {
+  if (req.headers.origin && (
+    req.headers.origin.includes('vercel.app') || 
+    req.headers.origin === 'https://new-english-17tq.vercel.app' ||
+    req.headers.origin === 'http://localhost:5173' ||
+    req.headers.origin === 'http://localhost:3000'
+  )) {
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+  next();
+});
+
 app.use(express.json());
 
 // 模拟字幕数据 - 用于测试
