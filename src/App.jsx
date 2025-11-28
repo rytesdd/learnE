@@ -43,12 +43,31 @@ function App() {
   // 防抖版本的文件上传处理函数
   const debouncedHandleFileUpload = debounce(handleFileUpload, 300);
 
-  const handleTextSelection = () => {
+  const handleTextSelection = async () => {
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
     
-    // 只有当选中的文本长度大于0且小于100个字符时才进行翻译
-    if (selectedText && selectedText.length > 0 && selectedText.length <= 100) {
+    // 如果选中的是单个单词（不包含空格），添加到候选词
+    if (selectedText && !selectedText.includes(' ') && selectedText.length <= 50) {
+      // 单个单词：添加到候选词并翻译
+      setSelectedText(selectedText);
+      try {
+        const result = await fetchTranslation(selectedText);
+        if (result && result.word) {
+          // 添加到候选词列表
+          if (!candidateWords.find(w => w.word === selectedText)) {
+            setCandidateWords(prev => [...prev, { 
+              word: selectedText, 
+              translation: result, 
+              timestamp: Date.now() 
+            }]);
+          }
+        }
+      } catch (err) {
+        console.error('翻译失败:', err);
+      }
+    } else if (selectedText && selectedText.length > 0 && selectedText.length <= 100) {
+      // 多个单词或句子：只翻译，不添加到候选词
       setSelectedText(selectedText);
       fetchTranslation(selectedText);
     } else if (selectedText.length > 100) {
@@ -98,7 +117,7 @@ function App() {
   };
 
   const fetchTranslation = async (text) => {
-    if (!text) return;
+    if (!text) return null;
     
     setIsLoading(true);
     setError('');
@@ -116,9 +135,12 @@ function App() {
           translationPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       }, 100);
+      
+      return result;
     } catch (err) {
       setError('翻译失败，请稍后重试');
       console.error('Translation error:', err);
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -259,7 +281,7 @@ function App() {
             
             {documentContent && (
               <section className="document-content" ref={contentRef}>
-                <h2>文档内容</h2>
+                <h2>文档内容（点击单词查看翻译并添加到候选词）</h2>
                 <div className="content-text">
                   <pre>{documentContent}</pre>
                 </div>
