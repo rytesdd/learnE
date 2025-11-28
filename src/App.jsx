@@ -244,27 +244,6 @@ function App() {
         </div>
       </header>
       <main className="app-main">
-        <section className="document-upload-section">
-          <input 
-            type="file" 
-            accept=".txt" 
-            onChange={debouncedHandleFileUpload} 
-          />
-          <button onClick={() => document.querySelector('input[type="file"]').click()}>
-            选择TXT文档
-          </button>
-          {fileName && <p className="file-name">已选择: {fileName}</p>}
-        </section>
-        
-        {documentContent && (
-          <section className="document-content" ref={contentRef}>
-            <h2>文档内容</h2>
-            <div className="content-text">
-              <pre>{documentContent}</pre>
-            </div>
-          </section>
-        )}
-        
         {activeTab === 'document' && (
           <>
             <section className="document-upload-section">
