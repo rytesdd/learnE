@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './App.css';
 import { translateText, translateSentence } from './utils/translationUtils';
+import VideoLinkInput from './components/Player/VideoLinkInput';
 
 function App() {
+  const [activeTab, setActiveTab] = useState('document'); // 'document' 或 'youtube'
   const [documentContent, setDocumentContent] = useState('');
   const [fileName, setFileName] = useState('');
   const [selectedText, setSelectedText] = useState('');
@@ -11,6 +13,8 @@ function App() {
   const [error, setError] = useState('');
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [showCopiedMessage, setShowCopiedMessage] = useState(false);
+  const [wordList, setWordList] = useState([]); // 背单词列表
+  const [candidateWords, setCandidateWords] = useState([]); // 候选词列表
   const contentRef = useRef(null);
 
   // 防抖函数
@@ -166,10 +170,56 @@ function App() {
     });
   }, []);
 
+  // 处理单词选择（用于背单词和候选词功能）
+  const handleWordSelect = useCallback((word, translation) => {
+    // 添加到候选词列表（如果还没有）
+    if (!candidateWords.find(w => w.word === word)) {
+      setCandidateWords(prev => [...prev, { word, translation, timestamp: Date.now() }]);
+    }
+  }, [candidateWords]);
+
+  // 添加单词到背单词列表
+  const addToWordList = (word) => {
+    const wordData = candidateWords.find(w => w.word === word);
+    if (wordData && !wordList.find(w => w.word === word)) {
+      setWordList(prev => [...prev, wordData]);
+    }
+  };
+
+  // 从背单词列表移除单词
+  const removeFromWordList = (word) => {
+    setWordList(prev => prev.filter(w => w.word !== word));
+  };
+
+  // 清空背单词列表
+  const clearWordList = () => {
+    setWordList([]);
+  };
+
   return (
     <div className="app">
       <header className="app-header">
-        <h1>文档阅读与翻译工具</h1>
+        <h1>学英语工具</h1>
+        <div className="tab-buttons">
+          <button 
+            className={activeTab === 'document' ? 'active' : ''}
+            onClick={() => setActiveTab('document')}
+          >
+            📄 文档解析
+          </button>
+          <button 
+            className={activeTab === 'youtube' ? 'active' : ''}
+            onClick={() => setActiveTab('youtube')}
+          >
+            🎥 YouTube字幕
+          </button>
+          <button 
+            className={activeTab === 'words' ? 'active' : ''}
+            onClick={() => setActiveTab('words')}
+          >
+            📚 背单词
+          </button>
+        </div>
       </header>
       <main className="app-main">
         <section className="document-upload-section">
@@ -193,50 +243,154 @@ function App() {
           </section>
         )}
         
-        {(selectedText || isLoading || translation || error) && (
-          <div className="translation-panel">
-            <h3>翻译结果</h3>
-            {isLoading && (
-              <div className="loading-container">
-                <span className="loading"></span>
-                翻译中...
-              </div>
+        {activeTab === 'document' && (
+          <>
+            <section className="document-upload-section">
+              <input 
+                type="file" 
+                accept=".txt" 
+                onChange={debouncedHandleFileUpload} 
+              />
+              <button onClick={() => document.querySelector('input[type="file"]').click()}>
+                选择TXT文档
+              </button>
+              {fileName && <p className="file-name">已选择: {fileName}</p>}
+            </section>
+            
+            {documentContent && (
+              <section className="document-content" ref={contentRef}>
+                <h2>文档内容</h2>
+                <div className="content-text">
+                  <pre>{documentContent}</pre>
+                </div>
+              </section>
             )}
-            {error && <p className="error-message">{error}</p>}
-            {translation && !isLoading && (
-              <div className="translation-item">
-                {translation.word ? (
-                  <>
-                    <p><strong>单词:</strong> {translation.word}</p>
-                    <p><strong>翻译:</strong> {translation.translation}</p>
-                    <p><strong>释义:</strong> {translation.definition}</p>
-                  </>
-                ) : (
-                  <>
-                    <p><strong>原文:</strong> {translation.original}</p>
-                    <p><strong>翻译:</strong> {translation.translation}</p>
-                  </>
+            
+            {(selectedText || isLoading || translation || error) && (
+              <div className="translation-panel">
+                <h3>翻译结果</h3>
+                {isLoading && (
+                  <div className="loading-container">
+                    <span className="loading"></span>
+                    翻译中...
+                  </div>
                 )}
+                {error && <p className="error-message">{error}</p>}
+                {translation && !isLoading && (
+                  <div className="translation-item">
+                    {translation.word ? (
+                      <>
+                        <p><strong>单词:</strong> {translation.word}</p>
+                        <p><strong>翻译:</strong> {translation.translation}</p>
+                        <p><strong>释义:</strong> {translation.definition}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p><strong>原文:</strong> {translation.original}</p>
+                        <p><strong>翻译:</strong> {translation.translation}</p>
+                      </>
+                    )}
+                  </div>
+                )}
+                {!translation && !isLoading && !error && selectedText && (
+                  <p>未找到 "{selectedText}" 的翻译</p>
+                )}
+                {showCopiedMessage && (
+                  <div className="copied-message">
+                    ✅ 翻译结果已复制到剪贴板
+                  </div>
+                )}
+                <div className="translation-actions">
+                  <button className="copy-translation-btn" onClick={copyTranslation}>
+                    复制翻译结果
+                  </button>
+                  <button className="clear-selection-btn" onClick={clearSelection}>
+                    清空选择
+                  </button>
+                </div>
               </div>
             )}
-            {!translation && !isLoading && !error && selectedText && (
-              <p>未找到 "{selectedText}" 的翻译</p>
-            )}
-            {/* 复制成功提示信息 */}
-            {showCopiedMessage && (
-              <div className="copied-message">
-                ✅ 翻译结果已复制到剪贴板
+          </>
+        )}
+
+        {activeTab === 'youtube' && (
+          <section className="youtube-section">
+            <VideoLinkInput 
+              onSubtitlesLoaded={(subtitles) => {
+                console.log('字幕已加载:', subtitles.length);
+              }}
+              onWordSelect={handleWordSelect}
+            />
+          </section>
+        )}
+
+        {activeTab === 'words' && (
+          <section className="words-section">
+            <div className="words-header">
+              <h2>背单词</h2>
+              <div className="words-stats">
+                <span>候选词: {candidateWords.length}</span>
+                <span>已添加: {wordList.length}</span>
               </div>
-            )}
-            <div className="translation-actions">
-              <button className="copy-translation-btn" onClick={copyTranslation}>
-                复制翻译结果
-              </button>
-              <button className="clear-selection-btn" onClick={clearSelection}>
-                清空选择
-              </button>
             </div>
-          </div>
+
+            {candidateWords.length > 0 && (
+              <div className="candidate-words">
+                <h3>候选词（点击添加到背单词列表）</h3>
+                <div className="candidate-list">
+                  {candidateWords.map((item, index) => (
+                    <div key={index} className="candidate-word-item">
+                      <div className="word-info">
+                        <strong>{item.word}</strong>
+                        <span>{item.translation.translation}</span>
+                      </div>
+                      <button 
+                        onClick={() => addToWordList(item.word)}
+                        disabled={wordList.find(w => w.word === item.word)}
+                      >
+                        {wordList.find(w => w.word === item.word) ? '已添加' : '添加'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {wordList.length > 0 && (
+              <div className="word-list">
+                <div className="word-list-header">
+                  <h3>我的单词本 ({wordList.length})</h3>
+                  <button onClick={clearWordList} className="clear-btn">清空列表</button>
+                </div>
+                <div className="word-list-items">
+                  {wordList.map((item, index) => (
+                    <div key={index} className="word-item">
+                      <div className="word-content">
+                        <strong>{item.word}</strong>
+                        <span>{item.translation.translation}</span>
+                        {item.translation.definition && (
+                          <p className="definition">{item.translation.definition}</p>
+                        )}
+                      </div>
+                      <button 
+                        onClick={() => removeFromWordList(item.word)}
+                        className="remove-btn"
+                      >
+                        移除
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {wordList.length === 0 && candidateWords.length === 0 && (
+              <div className="empty-state">
+                <p>还没有单词</p>
+                <p>在 YouTube 字幕中点击单词查看翻译，它们会自动出现在候选词列表中</p>
+              </div>
+            )}
+          </section>
         )}
       </main>
       {/* 回到顶部按钮 */}
