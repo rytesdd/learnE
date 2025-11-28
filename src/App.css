@@ -7,14 +7,37 @@
 
 /* 文档上传区域样式 */
 .document-upload-section {
-  margin: 30px auto;
+  margin: 20px auto;
   padding: 30px;
   background: linear-gradient(135deg, #f8f9fa, #e9ecef);
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  max-width: 600px;
+  max-width: 900px;
+  width: 100%;
   text-align: center;
   animation: fadeIn 0.6s ease-in-out;
+}
+
+.document-upload-section input[type="file"] {
+  display: none;
+}
+
+.document-upload-section button {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.document-upload-section button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 #document-upload {
@@ -53,13 +76,14 @@
 
 /* 文档内容区域样式 */
 .document-content {
-  margin: 30px auto;
+  margin: 20px auto;
   padding: 30px;
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
   border: 1px solid #e0e0e0;
-  max-width: 800px;
+  max-width: 900px;
+  width: 100%;
   text-align: left;
   animation: fadeIn 0.6s ease-in-out;
 }
@@ -101,13 +125,14 @@
 
 /* 翻译面板样式 */
 .translation-panel {
-  margin: 30px auto;
+  margin: 20px auto;
   padding: 20px;
   background: linear-gradient(135deg, #f5f5f5, #e9ecef);
   border-radius: 12px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
   border: 1px solid #e0e0e0;
-  max-width: 800px;
+  max-width: 900px;
+  width: 100%;
   animation: slideInRight 0.5s ease-out;
 }
 
@@ -224,13 +249,11 @@ body, html {
   margin: 0 auto;
   padding: 20px;
   text-align: center;
-  background-color: white;
+  background-color: #f5f5f5;
   color: #333;
   display: flex;
   flex-direction: column;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-  border-radius: 10px;
 }
 
 .app-header {
@@ -267,11 +290,8 @@ body, html {
 }
 
 /* 确保主要内容区域自适应 */
-.app > * {
-  max-width: 800px;
+.app-main > * {
   width: 100%;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .error-message {
