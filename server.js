@@ -30,20 +30,21 @@ const corsOptions = {
   optionsSuccessStatus: 204
 };
 
-app.use(cors(corsOptions));
-
-// 手动设置 Access-Control-Allow-Credentials 头以确保它被正确设置
+// 手动设置 Access-Control-Allow-Credentials 头（必须在 CORS 之前）
 app.use((req, res, next) => {
-  if (req.headers.origin && (
-    req.headers.origin.includes('vercel.app') || 
-    req.headers.origin === 'https://new-english-17tq.vercel.app' ||
-    req.headers.origin === 'http://localhost:5173' ||
-    req.headers.origin === 'http://localhost:3000'
+  const origin = req.headers.origin;
+  if (origin && (
+    origin.includes('vercel.app') || 
+    origin === 'https://new-english-17tq.vercel.app' ||
+    origin === 'http://localhost:5173' ||
+    origin === 'http://localhost:3000'
   )) {
     res.header('Access-Control-Allow-Credentials', 'true');
   }
   next();
 });
+
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
